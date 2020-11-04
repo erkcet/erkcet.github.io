@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Erkan Cetinkaya</title>
+    <link>/</link>
+    <description>Recent content on Erkan Cetinkaya</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>© made with ❤ by EC</copyright>
+    <lastBuildDate>Wed, 04 Nov 2020 20:01:08 +0300</lastBuildDate>
+    
+	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Resume</title>
+      <link>/resume/</link>
+      <pubDate>Wed, 04 Nov 2020 20:01:08 +0300</pubDate>
+      
+      <guid>/resume/</guid>
+      <description>Professional Career January 2019 - present // Chairman, Çetinkayalar Otomotiv
+January 2013 - December 2018 // Vice Chairman, Çetinkayalar Otomotiv
+March 2012 - June 2012 // Student Instructional Assistant, The Ohio State University
+ Assisting the course instructor with administrative duties and helping to manage CSE 675.01 - Introduction to Computer Architecture class.
+ Academic Career September 2006 - May 2012 // The Ohio State University
+ Degree in Computer Science and Engineering and Specialization in Business Information Systems</description>
+    </item>
+    
+    <item>
+      <title>Hello World!</title>
+      <link>/posts/2020-01-01-hello-world/</link>
+      <pubDate>Wed, 01 Jan 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/2020-01-01-hello-world/</guid>
+      <description>Bir bilgisayar mühendisinin klasikleşmiş girişidir “Hello World!” Bu web sayfasının oluş amacı bana ait bazı bilgilere ulaşım kolaylığı sağlamak ve aldığım bazı notlarımı paylaşmak. 2020 yılında güçlü bir okuma alışkanlığı edinebilmek içinde Books bölümünde okumayı bitirdiğim ve okumak istediğim kitapların listesini paylaşmayı planlıyorum. Umarım 2020 yılı güzellikler ve başarılarla dolu geçer.
+Görüşmek dileğiyle…</description>
+    </item>
+    
+  </channel>
+</rss>

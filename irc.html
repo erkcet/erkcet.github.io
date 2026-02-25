@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>erk.gg — IRC</title>
+    <meta name="description" content="How to connect to the ErkNet IRC network.">
+    <style>
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0a0a;
+            color: #00ff41;
+            font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', 'Courier New', monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 2rem;
+            position: relative;
+        }
+
+        /* Scanline overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 65, 0.015) 2px,
+                rgba(0, 255, 65, 0.015) 4px
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Moving scanline */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(
+                to bottom,
+                transparent,
+                rgba(0, 255, 65, 0.06),
+                transparent
+            );
+            animation: scanline 8s linear infinite;
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        .terminal {
+            max-width: 780px;
+            margin: 0 auto;
+        }
+
+        .line {
+            margin-bottom: 0.25rem;
+            visibility: hidden;
+        }
+
+        .line.visible {
+            visibility: visible;
+        }
+
+        .prompt {
+            color: #00ff41;
+            text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+        }
+
+        .command {
+            color: #fff;
+            text-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+        }
+
+        .output {
+            color: #b0b0b0;
+        }
+
+        .highlight {
+            color: #00ff41;
+            text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+        }
+
+        .dim {
+            color: #555;
+        }
+
+        .blank {
+            height: 1.6em;
+        }
+
+        a {
+            color: #00ff41;
+            text-decoration: none;
+            text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+            transition: text-shadow 0.2s;
+        }
+
+        a:hover {
+            text-shadow: 0 0 12px rgba(0, 255, 65, 0.7), 0 0 24px rgba(0, 255, 65, 0.3);
+        }
+
+        .link-arrow {
+            color: #555;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 0.6em;
+            height: 1.1em;
+            background: #00ff41;
+            vertical-align: text-bottom;
+            animation: blink 1s step-end infinite;
+            box-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+        }
+
+        .ascii {
+            color: #00ff41;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+            line-height: 1.2;
+            white-space: pre;
+            font-size: 13px;
+        }
+
+        .key {
+            display: inline-block;
+            min-width: 16ch;
+            color: #555;
+        }
+
+        .val {
+            color: #b0b0b0;
+        }
+
+        .val-highlight {
+            color: #00ff41;
+            text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+        }
+
+        .section-header {
+            color: #fff;
+            text-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+            border-bottom: 1px solid #333;
+            padding-bottom: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .chan {
+            color: #00ff41;
+            text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+            display: inline-block;
+            min-width: 16ch;
+        }
+
+        .cmd {
+            color: #00ff41;
+            display: inline-block;
+            min-width: 16ch;
+        }
+
+        .cmd-desc {
+            color: #555;
+        }
+
+        .back-link {
+            color: #555;
+            text-shadow: none;
+        }
+
+        .back-link:hover {
+            color: #00ff41;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                font-size: 12px;
+                padding: 1rem;
+            }
+            .ascii {
+                font-size: 8px;
+            }
+            .key, .chan, .cmd {
+                min-width: 0;
+                display: block;
+            }
+            .val, .cmd-desc {
+                display: block;
+                padding-left: 2ch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal" id="terminal">
+
+        <!-- ASCII Art Banner -->
+        <div class="line" data-delay="0"><pre class="ascii">
+ ███████╗██████╗ ██╗  ██╗███╗   ██╗███████╗████████╗
+ ██╔════╝██╔══██╗██║ ██╔╝████╗  ██║██╔════╝╚══██╔══╝
+ █████╗  ██████╔╝█████╔╝ ██╔██╗ ██║█████╗     ██║
+ ██╔══╝  ██╔══██╗██╔═██╗ ██║╚██╗██║██╔══╝     ██║
+ ███████╗██║  ██║██║  ██╗██║ ╚████║███████╗   ██║
+ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝</pre></div>
+
+        <div class="line blank" data-delay="100"></div>
+
+        <!-- intro -->
+        <div class="line" data-delay="200">
+            <span class="prompt">$</span> <span class="command">cat /etc/motd</span>
+        </div>
+        <div class="line" data-delay="400">
+            <span class="output">Welcome to </span><span class="highlight">ErkNet</span><span class="output"> — a personal IRC network running on </span><span class="val-highlight">irc.erk.gg</span>
+        </div>
+
+        <div class="line blank" data-delay="500"></div>
+
+        <!-- Quick connect -->
+        <div class="line" data-delay="600">
+            <span class="prompt">$</span> <span class="command">cat connect.txt</span>
+        </div>
+        <div class="line" data-delay="700">
+            <span class="section-header">CONNECTION</span>
+        </div>
+        <div class="line" data-delay="800">
+            <span class="key">server</span> <span class="val-highlight">irc.erk.gg</span>
+        </div>
+        <div class="line" data-delay="850">
+            <span class="key">port</span> <span class="val-highlight">6697</span>
+        </div>
+        <div class="line" data-delay="900">
+            <span class="key">tls/ssl</span> <span class="val">required (self-signed cert — accept the warning)</span>
+        </div>
+        <div class="line" data-delay="950">
+            <span class="key">channel</span> <span class="val-highlight">#general</span>
+        </div>
+
+        <div class="line blank" data-delay="1000"></div>
+
+        <!-- Web client -->
+        <div class="line" data-delay="1100">
+            <span class="prompt">$</span> <span class="command">cat webclient.txt</span>
+        </div>
+        <div class="line" data-delay="1200">
+            <span class="section-header">WEB CLIENT</span>
+        </div>
+        <div class="line" data-delay="1300">
+            <span class="output">No IRC client? Use </span><a href="https://chat.erk.gg">chat.erk.gg</a><span class="output"> in your browser.</span>
+        </div>
+        <div class="line" data-delay="1350">
+            <span class="output">Runs 24/7 — messages are kept even when you close the tab.</span>
+        </div>
+        <div class="line" data-delay="1400">
+            <span class="dim">Need an account? Ask erkan.</span>
+        </div>
+
+        <div class="line blank" data-delay="1450"></div>
+
+        <!-- Desktop clients -->
+        <div class="line" data-delay="1500">
+            <span class="prompt">$</span> <span class="command">ls clients/</span>
+        </div>
+        <div class="line" data-delay="1600">
+            <span class="key">WeeChat</span> <span class="dim">Linux, macOS</span>
+        </div>
+        <div class="line" data-delay="1650">
+            <span class="key">HexChat</span> <span class="dim">Windows, Linux</span>
+        </div>
+        <div class="line" data-delay="1700">
+            <span class="key">mIRC</span> <span class="dim">Windows</span>
+        </div>
+        <div class="line" data-delay="1750">
+            <span class="key">Irssi</span> <span class="dim">Linux, macOS</span>
+        </div>
+        <div class="line" data-delay="1800">
+            <span class="key">Revolution IRC</span> <span class="dim">Android</span>
+        </div>
+        <div class="line" data-delay="1850">
+            <span class="key">Palaver</span> <span class="dim">iOS</span>
+        </div>
+
+        <div class="line blank" data-delay="1900"></div>
+
+        <!-- Setup steps -->
+        <div class="line" data-delay="1950">
+            <span class="prompt">$</span> <span class="command">cat setup.txt</span>
+        </div>
+        <div class="line" data-delay="2050">
+            <span class="section-header">SETUP</span>
+        </div>
+        <div class="line" data-delay="2100">
+            <span class="dim">1.</span> <span class="output">Add server </span><span class="val-highlight">irc.erk.gg</span><span class="output"> on port </span><span class="val-highlight">6697</span><span class="output"> with SSL/TLS enabled</span>
+        </div>
+        <div class="line" data-delay="2150">
+            <span class="dim">2.</span> <span class="output">Accept the self-signed certificate</span>
+        </div>
+        <div class="line" data-delay="2200">
+            <span class="dim">3.</span> <span class="output">Pick a nick and connect</span>
+        </div>
+        <div class="line" data-delay="2250">
+            <span class="dim">4.</span> <span class="output">Register: </span><span class="highlight">/msg NickServ REGISTER &lt;password&gt; &lt;email&gt;</span>
+        </div>
+        <div class="line" data-delay="2300">
+            <span class="dim">5.</span> <span class="output">Next time: </span><span class="highlight">/msg NickServ IDENTIFY &lt;password&gt;</span>
+        </div>
+
+        <div class="line blank" data-delay="2350"></div>
+
+        <!-- Channels -->
+        <div class="line" data-delay="2400">
+            <span class="prompt">$</span> <span class="command">cat channels.txt</span>
+        </div>
+        <div class="line" data-delay="2500">
+            <span class="section-header">CHANNELS</span>
+        </div>
+        <div class="line" data-delay="2550">
+            <span class="chan">#general</span> <span class="dim">Main chat — say hi</span>
+        </div>
+        <div class="line" data-delay="2600">
+            <span class="chan">#media</span> <span class="dim">TV &amp; movie download announcements</span>
+        </div>
+        <div class="line" data-delay="2650">
+            <span class="chan">#downloads</span> <span class="dim">Torrent activity feed</span>
+        </div>
+
+        <div class="line blank" data-delay="2700"></div>
+
+        <!-- Services -->
+        <div class="line" data-delay="2750">
+            <span class="prompt">$</span> <span class="command">cat services.txt</span>
+        </div>
+        <div class="line" data-delay="2850">
+            <span class="section-header">SERVICES</span>
+        </div>
+        <div class="line" data-delay="2900">
+            <span class="key">NickServ</span> <span class="dim">Register &amp; protect your nick</span>
+        </div>
+        <div class="line" data-delay="2950">
+            <span class="key">ChanServ</span> <span class="dim">Channel management</span>
+        </div>
+        <div class="line" data-delay="3000">
+            <span class="key">HostServ</span> <span class="dim">Custom virtual hosts</span>
+        </div>
+        <div class="line" data-delay="3050">
+            <span class="key">MemoServ</span> <span class="dim">Offline messages</span>
+        </div>
+
+        <div class="line blank" data-delay="3100"></div>
+
+        <!-- Bot -->
+        <div class="line" data-delay="3150">
+            <span class="prompt">$</span> <span class="command">cat alfred.txt</span>
+        </div>
+        <div class="line" data-delay="3250">
+            <span class="section-header">ALFRED</span> <span class="dim">— resident bot in #general</span>
+        </div>
+        <div class="line" data-delay="3300">
+            <span class="cmd">!help</span> <span class="cmd-desc">List all commands</span>
+        </div>
+        <div class="line" data-delay="3350">
+            <span class="cmd">!stats</span> <span class="cmd-desc">Server stats (CPU, RAM, disk)</span>
+        </div>
+        <div class="line" data-delay="3400">
+            <span class="cmd">!library</span> <span class="cmd-desc">Media library stats</span>
+        </div>
+        <div class="line" data-delay="3450">
+            <span class="cmd">!search &lt;query&gt;</span> <span class="cmd-desc">Search for content</span>
+        </div>
+
+        <div class="line blank" data-delay="3500"></div>
+
+        <!-- Back link + cursor -->
+        <div class="line" data-delay="3550">
+            <a href="/" class="back-link">&lt; erk.gg</a>
+        </div>
+
+        <div class="line blank" data-delay="3600"></div>
+
+        <div class="line" data-delay="3650">
+            <span class="prompt">$</span> <span class="cursor"></span>
+        </div>
+
+    </div>
+
+    <script>
+        (function () {
+            var lines = document.querySelectorAll('.line');
+            lines.forEach(function (line) {
+                var delay = parseInt(line.getAttribute('data-delay'), 10) || 0;
+                setTimeout(function () {
+                    line.classList.add('visible');
+                }, delay);
+            });
+        })();
+    </script>
+</body>
+</html>
